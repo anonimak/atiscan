@@ -1,11 +1,11 @@
 import json
 import requests
+import config
 
-from config import config
 
 class ThreatcrowdScan:
 
-    def __init__(self, p='', scan_type = 0):
+    def __init__(self, p='', scan_type=0):
         self.scan_type = scan_type
         self.p = p
         self.url = config.API_SEARCH["threatcrowd"]["api"]
@@ -38,4 +38,4 @@ class ThreatcrowdScan:
 
         json_response = response.json()
         print(f'result {self.scan_type}: {json_response}')
-        
+        return json_response
