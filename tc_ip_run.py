@@ -7,12 +7,12 @@ import asyncio
 import aiohttp
 
 
-class ThreatcrowdScan:
+class ThreatcrowdScanIp:
 
     array_domain = []
 
-    def __init__(self, p=''):
-        self.p = p
+    def __init__(self, ip=''):
+        self.p = ip
         self.url = "https://www.threatcrowd.org/searchApi/v2/ip/report/?ip="+self.p
         self.url_domain = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
         self.proxies = {
@@ -25,7 +25,7 @@ class ThreatcrowdScan:
         loop.run_until_complete(self.main())
 
     async def fetch(self, session, url):
-        async with session.get(url,proxy=self.proxy) as response:
+        async with session.get(url) as response:
             return await response.read()
 
     async def main(self):
@@ -38,7 +38,6 @@ class ThreatcrowdScan:
                     url = self.url_domain+resolution["domain"]
                     data_domain = await self.fetch(session_domain, url)
                     res = json.loads(data_domain)
-                    permalink = res["permalink"]
                     votes = res["votes"]
 
                     if votes <= 0:
@@ -65,7 +64,7 @@ class ThreatcrowdScan:
 
 
 def main():
-    threatcrowdip = ThreatcrowdScan("167.88.206.88")
+    ThreatcrowdScanIp(ip=sys.argv[1])
 
 
 if __name__ == '__main__':
