@@ -3,6 +3,8 @@
 import requests
 import json
 import sys
+import os
+from tqdm import tqdm
 
 
 class ThreatcrowdScanIp:
@@ -21,15 +23,18 @@ class ThreatcrowdScanIp:
     def run(self):
         response_url = self.search(self.url)
         data = response_url.json()
-        for resolution in data["resolutions"]:
-            url = self.url_domain+resolution["domain"]
-            data_domain = self.search(url)
-            res = data_domain.json()
-            votes = res["votes"]
+        print("fetching data...")
+        with tqdm(total=len(data["resolutions"])) as pbar:
+            for resolution in data["resolutions"]:
+                url = self.url_domain+resolution["domain"]
+                data_domain = self.search(url)
+                res = data_domain.json()
+                votes = res["votes"]
 
-            if votes <= 0:
-                self.array_domain.append(votes)
-            pass
+                if votes <= 0:
+                    self.array_domain.append(votes)
+                pass
+                pbar.update(1)
 
         msg = "secure"
         malicious_status = False
@@ -47,10 +52,11 @@ class ThreatcrowdScanIp:
             "resolutions": data["resolutions"]
         }
 
+        os.system('cls' if os.name == 'nt' else "printf '\033c'")
         print(json.dumps(j))
 
     def search(self, url):
-        response = requests.get(url, proxies=self.proxies)
+        response = requests.get(url)
         return response
 
 
