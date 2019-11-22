@@ -6,54 +6,67 @@ import sys
 import asyncio
 import aiohttp
 
+
 class ThreatcrowdScan:
-    
+
+    array_domain = []
+
     def __init__(self, p=''):
         self.p = p
-        self.url = "https://www.threatcrowd.org/searchApi/v2/"
-    	self.proxies = {
-        	"http":"http://10.190.45.11:8080",
-            "https":"http://10.190.45.11:8080"
+        self.url = "https://www.threatcrowd.org/searchApi/v2/ip/report/?ip="+self.p
+        self.url_domain = "https://www.threatcrowd.org/searchApi/v2/domain/report/?domain="
+        self.proxies = {
+            "http": "http://10.190.45.11:8080",
+            "https": "http://10.190.45.11:8080"
         }
-        
+        self.proxy = "http://10.190.45.11:8080"
+
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(run())
+        loop.run_until_complete(self.main())
 
-    def domains(self):
-        url = self.url+"ip/report/?ip="+self.p
-        self.search(url)
+    async def fetch(self, session, url):
+        async with session.get(url,proxy=self.proxy) as response:
+            return await response.read()
 
-    def search(self, url):
-        
-        try:
-            response = requests.get(url, proxies=self.proxies)
-            data =response.json()
+    async def main(self):
+        async with aiohttp.ClientSession() as session:
+            data = await self.fetch(session, self.url)
+            data_json = json.loads(data)
 
-            msg = "secure"
-            malicious_status = False
+            async with aiohttp.ClientSession() as session_domain:
+                for resolution in data_json["resolutions"]:
+                    url = self.url_domain+resolution["domain"]
+                    data_domain = await self.fetch(session_domain, url)
+                    res = json.loads(data_domain)
+                    permalink = res["permalink"]
+                    votes = res["votes"]
 
-            if data["votes"] <= 0:
-                msg = "is malicious"
-                malicious_status = True
+                    if votes <= 0:
+                        self.array_domain.append(votes)
+                    pass
 
-            j = {
-                "response_code":data["response_code"],
-                "malicious_status":malicious_status,
-                "msg":msg,
-                "votes":data["votes"],
-                "permalink":data["permalink"],
-                "resolutions":data["resolutions"]
-            }
-            print(json.dumps(j))
-        except requests.exceptions.RequestException as e:
-            print e
-    
-    def searchdomain(self,url):
-        
-    
+                msg = "secure"
+                malicious_status = False
+
+                if self.array_domain:
+                    msg = "is malicious"
+                    malicious_status = True
+
+                j = {
+                    "response_code": data_json["response_code"],
+                    "malicious_status": malicious_status,
+                    "msg": msg,
+                    "votes": data_json["votes"],
+                    "permalink": data_json["permalink"],
+                    "resolutions": data_json["resolutions"]
+                }
+
+                print(json.dumps(j))
+
+
 def main():
-    threatcrowdip = ThreatcrowdScan(sys.argv[1])
-    threatcrowdip.run()
+    threatcrowdip = ThreatcrowdScan("167.88.206.88")
+
 
 if __name__ == '__main__':
     main()
